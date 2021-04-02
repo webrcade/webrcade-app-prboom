@@ -1,5 +1,6 @@
 import {
-  addDebugDiv
+  addDebugDiv,
+  registerAudioResume
 } from "@webrcade/app-common"
 
 export class Boom {
@@ -24,14 +25,16 @@ export class Boom {
         onExit: () => { app.exit(); },
         setWindowTitle: () => { return window.title; },
         locateFile: (path, prefix) => { return 'js/' + key + "/" + path; },
+        onRuntimeInitialized: () => { 
+          setTimeout(() => {
+            registerAudioResume(window.SDL.audioContext)}, 10);
+            resolve();
+          },
         setStatus: (status) => {
             let loading = status.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
             if (loading) {
                 let progress = loading[2] / loading[4] * 100;
                 if (loadingCb) loadingCb(progress);
-                if (progress === 100) {
-                  resolve();
-                }
             }
         },
         preRun: [() => { /*Storage.mountAndPopulateFs(key);*/ }]
