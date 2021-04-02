@@ -1,0 +1,4 @@
+[submodule "modules/webprboom"]
+	path = modules/webprboom
+	url = https://github.com/raz0red/webprboom.git
+	branch = webrcade
