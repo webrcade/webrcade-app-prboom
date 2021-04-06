@@ -27,15 +27,16 @@ export class Boom {
         locateFile: (path, prefix) => { return 'js/' + key + "/" + path; },
         onRuntimeInitialized: () => { 
           setTimeout(() => {
-            registerAudioResume(window.SDL.audioContext)}, 10);
+            registerAudioResume(window.SDL.audioContext)
             resolve();
-          },
+          }, 10);            
+        },
         setStatus: (status) => {
-            let loading = status.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
-            if (loading) {
-                let progress = loading[2] / loading[4] * 100;
-                if (loadingCb) loadingCb(progress);
-            }
+          let loading = status.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+          if (loading) {
+            let progress = loading[2] / loading[4] * 100;
+            if (loadingCb) loadingCb(progress);
+          }
         },
         preRun: [() => { /*Storage.mountAndPopulateFs(key);*/ }]
       }  
