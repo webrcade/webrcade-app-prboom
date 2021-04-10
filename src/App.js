@@ -60,6 +60,16 @@ class App extends WebrcadeApp {
       </>
     );
   }
+
+  async onPreExit() {
+    try {
+      await super.onPreExit();
+      await this.boom.storeFiles();
+    } catch (e) {
+      // TODO: Proper logging
+      console.error(e);
+    }
+  }
 }
 
 export default App;
