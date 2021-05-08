@@ -1,7 +1,10 @@
 import {
   addDebugDiv,
   registerAudioResume,
-  Storage
+  Storage,
+  Controller,
+  Controllers,
+  CIDS
 } from "@webrcade/app-common"
 
 export class Boom {
@@ -9,6 +12,10 @@ export class Boom {
     this.app = app;
     this.debug = debug;
     this.storage = new Storage();
+
+    this.controllers = new Controllers([
+      new Controller()
+    ]);
 
     if (this.debug) {
       this.debugDiv = addDebugDiv();
@@ -88,7 +95,7 @@ export class Boom {
   }
 
   loadBoom(key, canvas, loadingCb) {
-    const { app } = this;
+    const { app, controllers } = this;
 
     return new Promise((resolve, reject) => {
       window.Module = {
@@ -103,7 +110,11 @@ export class Boom {
           }
         },
         onAbort: (msg) => { app.exit(msg); },
-        onExit: () => { app.exit(); },
+        onExit: () => { 
+          controllers.waitUntilControlReleased(0, CIDS.A)
+          .then(() => app.exit())
+          .catch((e) => console.error(e))
+        },
         setWindowTitle: () => { return window.title; },
         locateFile: (path, prefix) => { return 'js/' + key + "/" + path; },
         onRuntimeInitialized: () => {
