@@ -118,10 +118,15 @@ export class Boom {
         setWindowTitle: () => { return window.title; },
         locateFile: (path, prefix) => { return 'js/' + key + "/" + path; },
         onRuntimeInitialized: () => {
-          setTimeout(() => {
-            registerAudioResume(window.SDL.audioContext)
-            resolve();
-          }, 10);
+          const f = () => {            
+            if (window.SDL && window.SDL.audioContext) {
+              registerAudioResume(window.SDL.audioContext)
+            } else {
+              setTimeout(f, 10);
+            }
+          }          
+          setTimeout(f, 10);          
+          resolve();
         },
         setStatus: (status) => {
           let loading = status.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
