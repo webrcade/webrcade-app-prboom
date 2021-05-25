@@ -1,21 +1,15 @@
 import {
   addDebugDiv,
   registerAudioResume,
-  Storage,
   Controller,
   Controllers,
-  CIDS
+  CIDS,
+  AppWrapper
 } from "@webrcade/app-common"
 
-export class Boom {
+export class Boom extends AppWrapper {
   constructor(app, debug = false) {
-    this.app = app;
-    this.debug = debug;
-    this.storage = new Storage();
-
-    this.controllers = new Controllers([
-      new Controller()
-    ]);
+    super(app, debug);
 
     if (this.debug) {
       this.debugDiv = addDebugDiv();
@@ -27,6 +21,27 @@ export class Boom {
   CFG_FILE = "prboom.cfg";
   SAV_PREFIX = "prbmsav";
   SAV_EXT = ".dsg";
+
+  createControllers() {
+    return new Controllers([
+      new Controller()
+    ]);
+  }
+
+  createTouchListener() {
+    // No touch listener
+    return null;
+  }
+
+  createVisibilityMonitor() {
+    // No visibility monitor
+    return null;
+  }
+
+  createAudioProcessor() {
+    // No audio processor
+    return null;
+  }
 
   async populateFiles() {
     const {
@@ -112,15 +127,21 @@ export class Boom {
         onAbort: (msg) => { app.exit(msg); },
         onExit: () => { 
           controllers.waitUntilControlReleased(0, CIDS.A)
-          .then(() => app.exit())
-          .catch((e) => console.error(e))
+            .then(() => app.exit())
+            .catch((e) => console.error(e))
         },
         setWindowTitle: () => { return window.title; },
         locateFile: (path, prefix) => { return 'js/' + key + "/" + path; },
         onRuntimeInitialized: () => {
           const f = () => {            
             if (window.SDL && window.SDL.audioContext) {
-              registerAudioResume(window.SDL.audioContext)
+              if (window.SDL.audioContext.state !== 'running') {
+                app.setShowOverlay(true);
+              }
+              registerAudioResume(
+                window.SDL.audioContext,
+                (running) => { setTimeout(() => app.setShowOverlay(!running), 50); }
+              );
             } else {
               setTimeout(f, 10);
             }
