@@ -1,10 +1,11 @@
 import {
   addDebugDiv,
   registerAudioResume,
+  AppWrapper,
   Controller,
   Controllers,
-  CIDS,
-  AppWrapper
+  LOG,
+  CIDS
 } from "@webrcade/app-common"
 
 export class Boom extends AppWrapper {
@@ -45,14 +46,14 @@ export class Boom extends AppWrapper {
 
   async populateFiles() {
     const {
+      app,
+      storage,
+      CFG_FILE,
       FS,
       FS_PREFIX,
-      SAVE_COUNT,
-      CFG_FILE,
-      SAV_PREFIX,
       SAV_EXT,
-      app,
-      storage
+      SAV_PREFIX,
+      SAVE_COUNT
     } = this;
 
     // Create the save path (MEM FS)
@@ -71,22 +72,21 @@ export class Boom extends AppWrapper {
           }
         }
       } catch (e) {
-        // TODO: Proper error handling
-        console.error(e);
+        LOG.error(e);
       }
     }
   }
 
   async storeFiles() {
     const {
+      app,
+      storage,
+      CFG_FILE,
       FS,
       FS_PREFIX,
-      SAVE_COUNT,
-      CFG_FILE,
-      SAV_PREFIX,
       SAV_EXT,
-      app,
-      storage
+      SAV_PREFIX,
+      SAVE_COUNT
     } = this;
 
     for (let i = -1; i < SAVE_COUNT; i++) {
@@ -102,9 +102,7 @@ export class Boom extends AppWrapper {
           }
         }
       } catch (e) {
-        // TODO: Remove old value?
-        // TODO: Proper error handling
-        console.error(e);
+        LOG.error(e);
       }
     }
   }
@@ -120,15 +118,14 @@ export class Boom extends AppWrapper {
           try {
             await this.storeFiles();
           } catch (e) {
-            // TODO: Proper error handling
-            console.error(e);
+            LOG.error(e);
           }
         },
         onAbort: (msg) => { app.exit(msg); },
         onExit: () => { 
           controllers.waitUntilControlReleased(0, CIDS.A)
             .then(() => app.exit())
-            .catch((e) => console.error(e))
+            .catch((e) => LOG.error(e))
         },
         setWindowTitle: () => { return window.title; },
         locateFile: (path, prefix) => { return 'js/' + key + "/" + path; },
@@ -163,8 +160,7 @@ export class Boom extends AppWrapper {
           try {
             await this.populateFiles();
           } catch (e) {
-            // TODO: Proper error handlng
-            console.error(e);
+            LOG.error(e);
           } finally {
             Module.removeRunDependency();
           }

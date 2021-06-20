@@ -1,4 +1,9 @@
-import { WebrcadeApp, Resources, TEXT_IDS } from '@webrcade/app-common'
+import { 
+  Resources, 
+  WebrcadeApp, 
+  LOG,
+  TEXT_IDS 
+} from '@webrcade/app-common'
 import { Boom } from './boom'
 
 import './App.scss';
@@ -32,7 +37,7 @@ class App extends WebrcadeApp {
         (percent) => { this.setState({ loadingPercent: percent | 0 }) })
         .then(() => this.setState({ mode: ModeEnum.LOADED }))
         .catch(msg => {
-          console.error(msg); // TODO: Proper logging
+          LOG.error(msg);
           this.exit(Resources.getText(TEXT_IDS.ERROR_RETRIEVING_GAME));
         })
     } catch (e) {
@@ -42,7 +47,7 @@ class App extends WebrcadeApp {
 
   componentDidUpdate() {
     const { mode } = this.state;
-    const { ModeEnum, canvas } = this;
+    const { canvas, ModeEnum } = this;
 
     if (mode === ModeEnum.LOADED) {
       canvas.style.display = 'block';
@@ -74,8 +79,7 @@ class App extends WebrcadeApp {
       await super.onPreExit();
       await this.boom.storeFiles();
     } catch (e) {
-      // TODO: Proper logging
-      console.error(e);
+      LOG.error(e);
     }
   }
 }
