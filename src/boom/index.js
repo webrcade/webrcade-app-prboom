@@ -134,16 +134,17 @@ export class Boom extends AppWrapper {
             if (window.SDL && window.SDL.audioContext) {
               if (window.SDL.audioContext.state !== 'running') {
                 app.setShowOverlay(true);
+                registerAudioResume(
+                  window.SDL.audioContext,
+                  (running) => { setTimeout(() => app.setShowOverlay(!running), 50); },
+                  500
+                );
               }
-              registerAudioResume(
-                window.SDL.audioContext,
-                (running) => { setTimeout(() => app.setShowOverlay(!running), 50); }
-              );
             } else {
-              setTimeout(f, 10);
+              setTimeout(f, 1000);
             }
           }          
-          setTimeout(f, 10);          
+          setTimeout(f, 1000);          
           resolve();
         },
         setStatus: (status) => {
