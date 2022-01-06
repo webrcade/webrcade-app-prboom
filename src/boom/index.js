@@ -12,6 +12,8 @@ export class Boom extends AppWrapper {
   constructor(app, debug = false) {
     super(app, debug);
 
+    this.key = null;
+
     if (this.debug) {
       this.debugDiv = addDebugDiv();
     }
@@ -47,6 +49,7 @@ export class Boom extends AppWrapper {
   async populateFiles() {
     const {
       app,
+      key,
       storage,
       CFG_FILE,
       FS,
@@ -62,7 +65,7 @@ export class Boom extends AppWrapper {
     for (let i = -1; i < SAVE_COUNT; i++) {
       const fileName = (i === -1 ? CFG_FILE : SAV_PREFIX + i + SAV_EXT);
       const path = FS_PREFIX + "/" + fileName;
-      const storagePath = app.getStoragePath(fileName);
+      const storagePath = app.getStoragePath(`${key}/${fileName}`);
       try {
         const res = FS.analyzePath(path, true);
         if (!res.exists) {
@@ -80,6 +83,7 @@ export class Boom extends AppWrapper {
   async storeFiles() {
     const {
       app,
+      key,
       storage,
       CFG_FILE,
       FS,
@@ -92,7 +96,7 @@ export class Boom extends AppWrapper {
     for (let i = -1; i < SAVE_COUNT; i++) {
       const fileName = (i === -1 ? CFG_FILE : SAV_PREFIX + i + SAV_EXT);
       const path = FS_PREFIX + "/" + fileName;
-      const storagePath = app.getStoragePath(fileName);
+      const storagePath = app.getStoragePath(`${key}/${fileName}`);
       try {
         const res = FS.analyzePath(path, true);
         if (res.exists) {
@@ -109,6 +113,8 @@ export class Boom extends AppWrapper {
 
   loadBoom(key, canvas, loadingCb) {
     const { app, controllers } = this;
+
+    this.key = key;
 
     return new Promise((resolve, reject) => {
       window.Module = {
