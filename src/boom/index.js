@@ -134,7 +134,9 @@ export class Boom extends AppWrapper {
             .catch((e) => LOG.error(e))
         },
         setWindowTitle: () => { return window.title; },
-        locateFile: (path, prefix) => { return 'js/' + key + "/" + path; },
+        //locateFile: (path, prefix) => { return 'js/' + key + "/" + path; },
+        //locateFile: (path, prefix) => { return 'https://archive.org/download/webrcade-default-feed/default-feed.zip/default-feed%2Fcontent%2Fdoom%2f' + key + "%2f" + path; },
+        locateFile: (path, prefix) => { return 'https://raw.githubusercontent.com/webrcade/webrcade-app-prboom/master/public/js/' + key + "%2f" + path; },        
         onRuntimeInitialized: () => {
           const f = () => {            
             if (window.SDL && window.SDL.audioContext) {
