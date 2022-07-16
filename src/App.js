@@ -1,8 +1,9 @@
-import { 
-  Resources, 
-  WebrcadeApp, 
+import {
+  settings,
+  Resources,
+  WebrcadeApp,
   LOG,
-  TEXT_IDS 
+  TEXT_IDS
 } from '@webrcade/app-common'
 import { Boom } from './boom'
 
@@ -35,6 +36,8 @@ class App extends WebrcadeApp {
 
       boom.loadBoom(game, this.canvas,
         (percent) => { this.setState({ loadingPercent: percent | 0 }) })
+        .then(() => settings.load())
+        // .then(() => settings.setBilinearFilterEnabled(true))
         .then(() => this.setState({ mode: ModeEnum.LOADED }))
         .catch(msg => {
           LOG.error(msg);
@@ -57,7 +60,7 @@ class App extends WebrcadeApp {
 
   renderCanvas() {
     return (
-      <canvas ref={canvas => { this.canvas = canvas; }} id="GameCanvas"></canvas>
+      <canvas style={this.getCanvasStyles()} ref={canvas => { this.canvas = canvas; }} id="GameCanvas"></canvas>
     );
   }
 
