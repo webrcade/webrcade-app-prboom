@@ -25,6 +25,8 @@ export class Boom extends AppWrapper {
   SAV_PREFIX = "prbmsav";
   SAV_EXT = ".dsg";
 
+  SAV_NAME = "sav";
+
   createControllers() {
     return new Controllers([
       new Controller()
@@ -46,37 +48,92 @@ export class Boom extends AppWrapper {
     return null;
   }
 
+  async migrateSaves() {
+    const { app, key, storage, CFG_FILE, SAV_PREFIX, SAV_EXT, SAVE_COUNT, SAV_NAME } = this;
+
+    const files = [];
+
+    // Load old saves
+    for (let i = -1; i < SAVE_COUNT; i++) {
+      const fileName = (i === -1 ? CFG_FILE : SAV_PREFIX + i + SAV_EXT);
+      const storagePath = app.getStoragePath(`${key}/${fileName}`);
+      try {
+        const s = await storage.get(storagePath);
+        if (s) {
+          files.push({
+            name: fileName,
+            content: s
+          });
+        }
+      } catch (e) {
+        LOG.error(e);
+      }
+    }
+
+    if (files.length > 0) {
+      LOG.info('Migrating local saves.');
+
+      // Persist in new format
+      await this.getSaveManager().saveLocal(
+        app.getStoragePath(`${key}/${SAV_NAME}`), files);
+
+      // Delete old files
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        await storage.remove(app.getStoragePath(`${key}/${f.name}`));
+      }
+    }
+  }
+
   async populateFiles() {
     const {
       app,
       key,
-      storage,
       CFG_FILE,
       FS,
       FS_PREFIX,
       SAV_EXT,
       SAV_PREFIX,
-      SAVE_COUNT
+      SAVE_COUNT,
+      SAV_NAME,
     } = this;
 
-    // Create the save path (MEM FS)
-    FS.mkdir(FS_PREFIX);
+    await this.migrateSaves();
 
-    for (let i = -1; i < SAVE_COUNT; i++) {
-      const fileName = (i === -1 ? CFG_FILE : SAV_PREFIX + i + SAV_EXT);
-      const path = FS_PREFIX + "/" + fileName;
-      const storagePath = app.getStoragePath(`${key}/${fileName}`);
-      try {
-        const res = FS.analyzePath(path, true);
-        if (!res.exists) {
-          const s = await storage.get(storagePath);
-          if (s) {
-            FS.writeFile(path, s);
+    try {
+      // Load from new save format
+      const files = await this.getSaveManager().load(
+        app.getStoragePath(`${key}/${SAV_NAME}`),
+        this.loadMessageCallback,
+      );
+
+      // Create the save path (MEM FS)
+      FS.mkdir(FS_PREFIX);
+
+      for (let i = -1; i < SAVE_COUNT; i++) {
+        const fileName = (i === -1 ? CFG_FILE : SAV_PREFIX + i + SAV_EXT);
+        const path = FS_PREFIX + "/" + fileName;
+        try {
+          const res = FS.analyzePath(path, true);
+          if (!res.exists) {
+            let s = null;
+            for (let j = 0; j < files.length; j++) {
+              const f = files[j];
+              if (f.name === fileName) {
+                s = f.content;
+                break;
+              }
+            }
+            if (s) {
+              FS.writeFile(path, s);
+            }
           }
+        } catch (e) {
+          LOG.error(e);
         }
-      } catch (e) {
-        LOG.error(e);
       }
+    } catch (e) {
+      LOG.error('Error loading save state: ' + e);
     }
   }
 
@@ -84,30 +141,46 @@ export class Boom extends AppWrapper {
     const {
       app,
       key,
-      storage,
       CFG_FILE,
       FS,
       FS_PREFIX,
       SAV_EXT,
       SAV_PREFIX,
-      SAVE_COUNT
+      SAVE_COUNT,
+      SAV_NAME
     } = this;
 
-    for (let i = -1; i < SAVE_COUNT; i++) {
-      const fileName = (i === -1 ? CFG_FILE : SAV_PREFIX + i + SAV_EXT);
-      const path = FS_PREFIX + "/" + fileName;
-      const storagePath = app.getStoragePath(`${key}/${fileName}`);
-      try {
-        const res = FS.analyzePath(path, true);
-        if (res.exists) {
-          const s = FS.readFile(path);              
-          if (s) {
-            await storage.put(storagePath, s);
+    try {
+      const files = [];
+      for (let i = -1; i < SAVE_COUNT; i++) {
+        const fileName = (i === -1 ? CFG_FILE : SAV_PREFIX + i + SAV_EXT);
+        const path = FS_PREFIX + "/" + fileName;
+        //const storagePath = app.getStoragePath(`${key}/${fileName}`);
+        try {
+          const res = FS.analyzePath(path, true);
+          if (res.exists) {
+            const s = FS.readFile(path);
+            if (s) {
+              //await storage.put(storagePath, s);
+              files.push({
+                name: fileName,
+                content: s
+              })
+            }
           }
+        } catch (e) {
+          LOG.error(e);
         }
-      } catch (e) {
-        LOG.error(e);
       }
+
+      if (files.length > 0) {
+        await this.getSaveManager().save(
+          app.getStoragePath(`${key}/${SAV_NAME}`),
+          files,
+          this.saveMessageCallback);
+      }
+    } catch(e) {
+      LOG.error('Error persisting save state: ' + e);
     }
   }
 
@@ -120,7 +193,7 @@ export class Boom extends AppWrapper {
       window.Module = {
         canvas: canvas,
         elementPointerLock: true,
-        prSyncFs: async () => { 
+        prSyncFs: async () => {
           try {
             await this.storeFiles();
           } catch (e) {
@@ -128,7 +201,7 @@ export class Boom extends AppWrapper {
           }
         },
         onAbort: (msg) => { app.exit(msg); },
-        onExit: () => { 
+        onExit: () => {
           controllers.waitUntilControlReleased(0, CIDS.A)
             .then(() => app.exit())
             .catch((e) => LOG.error(e))
@@ -136,9 +209,9 @@ export class Boom extends AppWrapper {
         setWindowTitle: () => { return window.title; },
         //locateFile: (path, prefix) => { return 'js/' + key + "/" + path; },
         //locateFile: (path, prefix) => { return 'https://archive.org/download/webrcade-default-feed/default-feed.zip/default-feed%2Fcontent%2Fdoom%2f' + key + "%2f" + path; },
-        locateFile: (path, prefix) => { return 'https://raw.githubusercontent.com/webrcade/webrcade-app-prboom/master/public/js/' + key + "%2f" + path; },        
+        locateFile: (path, prefix) => { return 'https://raw.githubusercontent.com/webrcade/webrcade-app-prboom/master/public/js/' + key + "%2f" + path; },
         onRuntimeInitialized: () => {
-          const f = () => {            
+          const f = () => {
             if (window.SDL && window.SDL.audioContext) {
               if (window.SDL.audioContext.state !== 'running') {
                 app.setShowOverlay(true);
@@ -151,8 +224,8 @@ export class Boom extends AppWrapper {
             } else {
               setTimeout(f, 1000);
             }
-          }          
-          setTimeout(f, 1000);          
+          }
+          setTimeout(f, 1000);
           resolve();
         },
         setStatus: (status) => {
@@ -162,7 +235,7 @@ export class Boom extends AppWrapper {
             if (loadingCb) loadingCb(progress);
           }
         },
-        preRun: [async () => { 
+        preRun: [async () => {
           const { Module } = window;
           Module.addRunDependency();
           this.FS = window.FS;
