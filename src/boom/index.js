@@ -234,6 +234,9 @@ export class Boom extends AppWrapper {
         },
         onRuntimeInitialized: () => {
           const f = () => {
+            // Enable show message
+            this.setShowMessageEnabled(true);
+
             if (window.SDL && window.SDL.audioContext) {
               if (window.SDL.audioContext.state !== 'running') {
                 app.setShowOverlay(true);

@@ -1,4 +1,5 @@
 import {
+  setMessageAnchorId,
   settings,
   Resources,
   WebrcadeApp,
@@ -15,6 +16,8 @@ class App extends WebrcadeApp {
 
   componentDidMount() {
     super.componentDidMount();
+
+    setMessageAnchorId('GameCanvas');
 
     if (this.boom === null) {
       this.boom = new Boom(this, this.isDebug());
