@@ -8,6 +8,8 @@ import {
   CIDS,
 } from '@webrcade/app-common';
 
+const FS_PREFIX = '/save';
+
 export class Boom extends AppWrapper {
   constructor(app, debug = false) {
     super(app, debug);
@@ -20,7 +22,6 @@ export class Boom extends AppWrapper {
   }
 
   SAVE_COUNT = 8;
-  FS_PREFIX = '/save';
   CFG_FILE = 'prboom.cfg';
   SAV_PREFIX = 'prbmsav';
   SAV_EXT = '.dsg';
@@ -100,7 +101,6 @@ export class Boom extends AppWrapper {
       key,
       CFG_FILE,
       FS,
-      FS_PREFIX,
       SAV_EXT,
       SAV_PREFIX,
       SAVE_COUNT,
@@ -116,8 +116,8 @@ export class Boom extends AppWrapper {
         this.loadMessageCallback,
       );
 
-      // Create the save path (MEM FS)
-      FS.mkdir(FS_PREFIX);
+      // Cache file hashes
+      await this.getSaveManager().checkFilesChanged(files);
 
       for (let i = -1; i < SAVE_COUNT; i++) {
         const fileName = i === -1 ? CFG_FILE : SAV_PREFIX + i + SAV_EXT;
@@ -146,13 +146,12 @@ export class Boom extends AppWrapper {
     }
   }
 
-  async storeFiles() {
+  async storeFiles(force) {
     const {
       app,
       key,
       CFG_FILE,
       FS,
-      FS_PREFIX,
       SAV_EXT,
       SAV_PREFIX,
       SAVE_COUNT,
@@ -182,7 +181,9 @@ export class Boom extends AppWrapper {
         }
       }
 
-      if (files.length > 0) {
+      const hasChanges = await this.getSaveManager().checkFilesChanged(files);
+
+      if (force || hasChanges) {
         await this.getSaveManager().save(
           app.getStoragePath(`${key}/${SAV_NAME}`),
           files,
@@ -216,6 +217,7 @@ export class Boom extends AppWrapper {
         onExit: () => {
           controllers
             .waitUntilControlReleased(0, CIDS.A)
+            .then(() => this.storeFiles(true))
             .then(() => app.exit())
             .catch((e) => LOG.error(e));
         },
@@ -267,6 +269,8 @@ export class Boom extends AppWrapper {
             const { Module } = window;
             Module.addRunDependency();
             this.FS = window.FS;
+            // Create the save path (MEM FS)
+            this.FS.mkdir(FS_PREFIX);
             try {
               await this.populateFiles();
             } catch (e) {
