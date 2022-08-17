@@ -37,20 +37,20 @@ class App extends WebrcadeApp {
       }
       if (!found) throw new Error('Unknown game: ' + game);
 
-      boom
-        .loadBoom(game, this.canvas, (percent) => {
-          this.setState({ loadingPercent: percent | 0 });
-        })
-        .then(() => settings.load())
-        // .then(() => settings.setBilinearFilterEnabled(true))
-        .then(() => this.setState({ mode: ModeEnum.LOADED }))
-        .catch((msg) => {
-          LOG.error(msg);
-          this.exit(
-            this.isDebug()
-              ? msg
-              : Resources.getText(TEXT_IDS.ERROR_RETRIEVING_GAME),
-          );
+      settings.load().finally(() => {
+        boom.loadBoom(game, this.canvas, (percent) => {
+            this.setState({ loadingPercent: percent | 0 });
+          })
+          // .then(() => settings.setBilinearFilterEnabled(true))
+          .then(() => this.setState({ mode: ModeEnum.LOADED }))
+          .catch((msg) => {
+            LOG.error(msg);
+            this.exit(
+              this.isDebug()
+                ? msg
+                : Resources.getText(TEXT_IDS.ERROR_RETRIEVING_GAME),
+            );
+          });
         });
     } catch (e) {
       this.exit(e);
