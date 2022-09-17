@@ -1,10 +1,12 @@
-import { 
-  Resources, 
-  WebrcadeApp, 
+import {
+  setMessageAnchorId,
+  settings,
+  Resources,
+  WebrcadeApp,
   LOG,
-  TEXT_IDS 
-} from '@webrcade/app-common'
-import { Boom } from './boom'
+  TEXT_IDS,
+} from '@webrcade/app-common';
+import { Boom } from './boom';
 
 import './App.scss';
 
@@ -14,6 +16,8 @@ class App extends WebrcadeApp {
 
   componentDidMount() {
     super.componentDidMount();
+
+    setMessageAnchorId('GameCanvas');
 
     if (this.boom === null) {
       this.boom = new Boom(this, this.isDebug());
@@ -25,21 +29,29 @@ class App extends WebrcadeApp {
       // Get the game that was specified
       let game = appProps.game;
 
-      if (!game) throw new Error("A game was not specified.");
+      if (!game) throw new Error('A game was not specified.');
       game = game.toLowerCase();
       let found = false;
       for (let i = 0; !found && i < GAMES.length; i++) {
         found = GAMES[i] === game;
       }
-      if (!found) throw new Error("Unknown game: " + game);
+      if (!found) throw new Error('Unknown game: ' + game);
 
-      boom.loadBoom(game, this.canvas,
-        (percent) => { this.setState({ loadingPercent: percent | 0 }) })
-        .then(() => this.setState({ mode: ModeEnum.LOADED }))
-        .catch(msg => {
-          LOG.error(msg);
-          this.exit(this.isDebug() ? msg : Resources.getText(TEXT_IDS.ERROR_RETRIEVING_GAME));
-        })
+      settings.load().finally(() => {
+        boom.loadBoom(game, this.canvas, (percent) => {
+            this.setState({ loadingPercent: percent | 0 });
+          })
+          // .then(() => settings.setBilinearFilterEnabled(true))
+          .then(() => this.setState({ mode: ModeEnum.LOADED }))
+          .catch((msg) => {
+            LOG.error(msg);
+            this.exit(
+              this.isDebug()
+                ? msg
+                : Resources.getText(TEXT_IDS.ERROR_RETRIEVING_GAME),
+            );
+          });
+        });
     } catch (e) {
       this.exit(e);
     }
@@ -57,7 +69,13 @@ class App extends WebrcadeApp {
 
   renderCanvas() {
     return (
-      <canvas ref={canvas => { this.canvas = canvas; }} id="GameCanvas"></canvas>
+      <canvas
+        style={this.getCanvasStyles()}
+        ref={(canvas) => {
+          this.canvas = canvas;
+        }}
+        id="GameCanvas"
+      ></canvas>
     );
   }
 
@@ -67,9 +85,9 @@ class App extends WebrcadeApp {
 
     return (
       <>
-        { super.render()}
-        { mode === ModeEnum.LOADING ? this.renderLoading() : null}
-        { this.renderCanvas()}
+        {super.render()}
+        {mode === ModeEnum.LOADING ? this.renderLoading() : null}
+        {this.renderCanvas()}
       </>
     );
   }
