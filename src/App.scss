@@ -5,10 +5,12 @@ body {
   display: none;
   position: absolute;
 
-  width: calc(100% - 4vw);
-  height: calc(96vw * 0.75);
-  max-height: 96vh;
-  max-width: calc(96vh * 1.333);
+  // width: calc(100% - 4vw);
+  // height: calc(96vw * 0.75);
+  // max-height: 96vh;
+  // max-width: calc(96vh * 1.333);
+  width: 96vw;
+  height: 96vw;
 
   left: 50%;
   top: 50%;

@@ -62,6 +62,7 @@ class App extends WebrcadeApp {
     const { canvas, ModeEnum } = this;
 
     if (mode === ModeEnum.LOADED) {
+      this.boom.updateScreenSize();
       canvas.style.display = 'block';
       window.focus();
     }
