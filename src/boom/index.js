@@ -198,6 +198,7 @@ export class Boom extends AppWrapper {
   loadBoom(key, canvas, loadingCb) {
     const { app, controllers } = this;
 
+    this.canvas = canvas;
     this.key = key;
 
     return new Promise((resolve, reject) => {
@@ -286,5 +287,9 @@ export class Boom extends AppWrapper {
       document.body.appendChild(script);
       script.src = 'js/' + key + '/' + key + '.js';
     });
+  }
+
+  getDefaultAspectRatio() {
+    return 1.333;
   }
 }
